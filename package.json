@@ -26,5 +26,8 @@
   },
   "devDependencies": {
     "serve": "^14.0.0"
+  },
+  "dependencies": {
+    "xo-connect": "^2.1.3"
   }
 }
