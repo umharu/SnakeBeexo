@@ -1,884 +1,462 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="icon" href="logo.png" type="image/x-icon">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
+    <!-- Fuente -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Logo Beexo -->
+    <link rel="icon" href="/logo.png" type="image/x-icon" />
+
+    <!-- Iconos -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Snake Game</title>
+
+    <title>Beexo Snake</title>
+
     <style type="text/tailwindcss">
-        @theme {
-            --font-family-base: "Poppins", sans-serif;
-        }
+      @theme {
+        --font-family-base: "Poppins", sans-serif;
+      }
 
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
         }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
 
-        @keyframes pulse-food {
-            0%, 100% {
-                transform: translateY(-50%) scale(1);
-            }
-            50% {
-                transform: translateY(-50%) scale(1.2);
-            }
+      @keyframes pulse-food {
+        0%,
+        100% {
+          transform: translateY(-50%) scale(1);
         }
+        50% {
+          transform: translateY(-50%) scale(1.2);
+        }
+      }
 
-        @keyframes bounce {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: scale(1);
         }
+        50% {
+          transform: scale(1.1);
+        }
+      }
 
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
 
-        .animate-pulse-food {
-            animation: pulse-food 2s ease-in-out infinite;
-        }
+      .animate-pulse-food {
+        animation: pulse-food 2s ease-in-out infinite;
+      }
 
-        .animate-bounce-score {
-            animation: bounce 0.5s ease-in-out;
-        }
+      .animate-bounce-score {
+        animation: bounce 0.5s ease-in-out;
+      }
 
-        body {
-            font-family: "Poppins", sans-serif;
-        }
+      body {
+        font-family: "Poppins", sans-serif;
+      }
     </style>
-    <script src="https://unpkg.com/xo-connect@latest/dist/xo-connect.umd.js"></script>
+  </head>
 
-</head>
-
-<body class="m-0 p-0 box-border bg-gradient-to-br from-[#667eea] to-[#764ba2] min-h-screen text-white">
+  <body
+    class="m-0 p-0 box-border bg-gradient-to-br from-[#0b1020] via-[#111827] to-[#020617] min-h-screen text-white"
+  >
     <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header
-            class="bg-black/10 backdrop-blur-[10px] border-b border-white/10 px-4 sm:px-8 py-4 sticky top-0 z-[100]">
-            <div class="flex justify-between items-center max-w-[1200px] mx-auto relative">
-                <!-- Logo -->
-                <h1 class="text-2xl sm:text-3xl font-bold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.3)]">🐍 Snake
-                    Game</h1>
+      <!-- Header -->
+      <header
+        class="bg-black/20 backdrop-blur-[10px] border-b border-white/10 px-4 sm:px-8 py-4 sticky top-0 z-[100]"
+      >
+        <div
+          class="flex justify-between items-center max-w-[1200px] mx-auto relative"
+        >
+          <!-- Logo + title -->
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-black flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.6)] border border-white/10"
+            >
+              <img
+                src="/logo.png"
+                alt="Beexo"
+                class="w-7 h-7 object-contain rounded-lg"
+              />
+            </div>
+            <div>
+              <h1
+                class="text-xl sm:text-2xl font-bold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.4)]"
+              >
+                Beexo Snake
+              </h1>
+              <p class="text-xs text-white/70">
+                Juega, firma tu score y compite en el ranking.
+              </p>
+            </div>
+          </div>
 
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex gap-4">
-                    <button
-                        class="nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-2 rounded-full cursor-pointer transition-all duration-300 font-medium text-sm hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active"
-                        data-page="home">Home</button>
-                    <button
-                        class="nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-2 rounded-full cursor-pointer transition-all duration-300 font-medium text-sm hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5"
-                        data-page="game">Play</button>
-                    <button
-                        class="nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-2 rounded-full cursor-pointer transition-all duration-300 font-medium text-sm hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5"
-                        data-page="about">About</button>
+          <!-- Desktop Navigation -->
+          <div class="hidden md:flex gap-3">
+            <button
+              class="nav-btn bg-transparent border border-white/20 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 text-xs sm:text-sm hover:bg-white/10 hover:border-white/40 hover:-translate-y-0.5 active"
+              data-page="home"
+            >
+              Inicio
+            </button>
+            <button
+              class="nav-btn bg-transparent border border-white/20 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 text-xs sm:text-sm hover:bg-white/10 hover:border-white/40 hover:-translate-y-0.5"
+              data-page="game"
+            >
+              Jugar
+            </button>
+            <button
+              class="nav-btn bg-transparent border border-white/20 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 text-xs sm:text-sm hover:bg-white/10 hover:border-white/40 hover:-translate-y-0.5"
+              data-page="about"
+            >
+              Sobre el juego
+            </button>
+          </div>
+
+          <!-- Mobile Menu Toggle -->
+          <button
+            class="md:hidden flex items-center justify-center bg-transparent border border-white/30 text-white p-2 rounded-lg cursor-pointer transition-all duration-300 text-xl w-10 h-10 hover:bg-white/10 hover:scale-105"
+            id="menuToggle"
+          >
+            <i class="ri-menu-line"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mobile Navigation Overlay -->
+      <div
+        class="fixed top-0 left-0 w-full h-full bg-black/50 z-[1000] opacity-0 invisible transition-all duration-300 [&.active]:opacity-100 [&.active]:visible"
+        id="mobileOverlay"
+      ></div>
+
+      <!-- Mobile Navigation -->
+      <nav
+        class="fixed top-0 -right-full w-[250px] h-screen bg-black/95 backdrop-blur-[20px] z-[1001] transition-[right] duration-300 p-4 border-l border-white/10 [&.active]:right-0"
+        id="mobileNav"
+      >
+        <div
+          class="flex justify-between items-center mb-8 pb-4 border-b border-white/10"
+        >
+          <span class="text-xl font-semibold text-white">Menú</span>
+          <button
+            class="flex items-center justify-center bg-transparent border border-white/30 text-white p-2 rounded-lg cursor-pointer transition-all duration-300 text-lg w-[35px] h-[35px] hover:bg-white/10 hover:scale-105"
+            id="mobileClose"
+          >
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button
+            class="mobile-nav-btn bg-transparent border border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/10 hover:border-white/40 hover:translate-x-1 active"
+            data-page="home"
+          >
+            <i class="ri-home-line"></i> Inicio
+          </button>
+          <button
+            class="mobile-nav-btn bg-transparent border border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/10 hover:border-white/40 hover:translate-x-1"
+            data-page="game"
+          >
+            <i class="ri-play-line"></i> Jugar
+          </button>
+          <button
+            class="mobile-nav-btn bg-transparent border border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/10 hover:border-white/40 hover:translate-x-1"
+            data-page="about"
+          >
+            <i class="ri-information-line"></i> Sobre el juego
+          </button>
+        </div>
+      </nav>
+
+      <!-- Home Page -->
+      <main
+        class="flex-1 flex items-center justify-center p-6 sm:p-8"
+        id="homePage"
+      >
+        <div
+          class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-[1200px] items-center w-full"
+        >
+          <!-- Left: text + alias form -->
+          <div class="text-center lg:text-left space-y-6">
+            <h2
+              class="text-3xl sm:text-4xl lg:text-[2.8rem] font-bold mb-2 bg-gradient-to-r from-white via-[#e0f2fe] to-[#7dd3fc] bg-clip-text text-transparent leading-tight"
+            >
+              Juega Beexo Snake
+            </h2>
+            <p class="text-base sm:text-lg opacity-90 mb-2 leading-relaxed">
+              Escribí tu alias de Beexo, conectá tu wallet y competí para
+              conseguir el mejor score. Tu puntaje se firma con tu cuenta.
+            </p>
+
+            <!-- Alias input + JUGAR button -->
+            <div class="space-y-4 max-w-md mx-auto lg:mx-0">
+              <input
+                id="aliasInput"
+                type="text"
+                placeholder="Tu alias de Beexo"
+                class="w-full px-4 py-3 sm:py-3.5 rounded-2xl bg-white text-gray-900 placeholder-gray-400 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-base sm:text-lg"
+              />
+
+              <button
+                id="aliasPlayBtn"
+                class="w-full py-3.5 sm:py-4 rounded-2xl bg-[#09090b] text-white font-semibold tracking-[0.16em] text-sm sm:text-base cursor-pointer transition-all duration-300 hover:bg-black hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.4)] active:translate-y-0"
+              >
+                JUGAR
+              </button>
+
+              <p class="text-xs sm:text-sm text-white/70">
+                Jugador actual:
+                <span class="xo-alias font-semibold">Sin alias</span>
+              </p>
+              <p class="text-[11px] sm:text-xs text-white/60">
+                Tip: si Beexo ya te dio un alias, lo vamos a sugerir
+                automáticamente cuando se conecte la wallet.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: snake preview + leaderboard -->
+          <div class="flex flex-col gap-6 items-center">
+            <!-- Preview card -->
+            <div
+              class="relative w-full max-w-md rounded-[28px] bg-gradient-to-br from-slate-900/80 to-slate-800/80 border border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.8)] p-5 sm:p-6"
+            >
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.16em] text-white/50">
+                    Vista previa
+                  </p>
+                  <p class="text-sm text-white/80">
+                    Score máximo:
+                    <span id="previewHighScore" class="font-semibold">0</span>
+                  </p>
                 </div>
-
-                <!-- Mobile Menu Toggle -->
-                <button
-                    class="md:hidden flex items-center justify-center bg-transparent border-2 border-white/30 text-white p-2 rounded-lg cursor-pointer transition-all duration-300 text-xl w-10 h-10 hover:bg-white/10 hover:scale-105"
-                    id="menuToggle">
-                    <i class="ri-menu-line"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Mobile Navigation Overlay -->
-        <div class="fixed top-0 left-0 w-full h-full bg-black/50 z-[1000] opacity-0 invisible transition-all duration-300 [&.active]:opacity-100 [&.active]:visible"
-            id="mobileOverlay"></div>
-
-        <!-- Mobile Navigation -->
-        <nav class="fixed top-0 -right-full w-[250px] h-screen bg-black/95 backdrop-blur-[20px] z-[1001] transition-[right] duration-300 p-4 border-l border-white/10 [&.active]:right-0"
-            id="mobileNav">
-            <div class="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
-                <span class="text-xl font-semibold text-white">Menu</span>
-                <button
-                    class="flex items-center justify-center bg-transparent border-2 border-white/30 text-white p-2 rounded-lg cursor-pointer transition-all duration-300 text-lg w-[35px] h-[35px] hover:bg-white/10 hover:scale-105"
-                    id="mobileClose">
-                    <i class="ri-close-line"></i>
-                </button>
-            </div>
-            <div class="flex flex-col gap-2">
-                <button
-                    class="mobile-nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/20 hover:border-white/40 hover:translate-x-1 active"
-                    data-page="home">
-                    <i class="ri-home-line"></i> Home
-                </button>
-                <button
-                    class="mobile-nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/20 hover:border-white/40 hover:translate-x-1"
-                    data-page="game">
-                    <i class="ri-play-line"></i> Play Game
-                </button>
-                <button
-                    class="mobile-nav-btn bg-transparent border-2 border-white/20 text-white px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 font-medium text-base text-left w-full hover:bg-white/20 hover:border-white/40 hover:translate-x-1"
-                    data-page="about">
-                    <i class="ri-user-line"></i> About Developer
-                </button>
-            </div>
-        </nav>
-
-        <!-- Home Page -->
-        <main class="flex-1 flex items-center justify-center p-8" id="homePage">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-[1200px] items-center">
-                <div class="text-left text-center lg:text-left">
-                    <h2
-                        class="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold mb-4 bg-gradient-to-r from-white to-[#e0e7ff] bg-clip-text text-transparent leading-tight">
-                        Classic Snake Game</h2>
-                    <p class="text-lg sm:text-xl opacity-90 mb-8 leading-relaxed">
-                        Control the snake, eat food, and grow longer while avoiding collisions.
-                        How long can you survive?
-                    </p>
-                    <div class="flex gap-4 flex-wrap justify-center lg:justify-start">
-                        <button
-                            class="bg-gradient-to-r from-[#10b981] to-[#059669] border-none text-white px-8 py-4 rounded-full text-lg font-semibold cursor-pointer transition-all duration-300 flex items-center gap-2 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)]"
-                            id="startGameBtn">
-                            <i class="ri-play-fill"></i> Start Playing
-                        </button>
-                        <button
-                            class="bg-transparent border-2 border-white/30 text-white px-8 py-4 rounded-full text-lg font-semibold cursor-pointer transition-all duration-300 flex items-center gap-2 hover:bg-white/10 hover:-translate-y-1"
-                            id="howToPlayBtn">
-                            <i class="ri-question-line"></i> How to Play
-                        </button>
-                    </div>
-                </div>
-                <div class="flex items-center justify-center relative h-[300px]">
-                    <div class="flex items-center gap-1.5 animate-float">
-                        <div
-                            class="w-[30px] h-[30px] rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.2)] bg-gradient-to-br from-[#f59e0b] to-[#d97706] border-[3px] border-white">
-                        </div>
-                        <div
-                            class="w-[30px] h-[30px] rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.2)] bg-gradient-to-br from-[#10b981] to-[#059669]">
-                        </div>
-                        <div
-                            class="w-[30px] h-[30px] rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.2)] bg-gradient-to-br from-[#10b981] to-[#059669]">
-                        </div>
-                        <div
-                            class="w-[30px] h-[30px] rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.2)] bg-gradient-to-br from-[#10b981] to-[#059669]">
-                        </div>
-                    </div>
-                    <div
-                        class="absolute right-5 top-1/2 w-[25px] h-[25px] bg-gradient-to-br from-[#ef4444] to-[#dc2626] rounded-full animate-pulse-food shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                    </div>
-                </div>
-            </div>
-
-            <!-- How to Play Modal -->
-            <div class="hidden fixed top-0 left-0 w-full h-full bg-black/70 flex items-center justify-center z-[1000]"
-                id="howToPlayModal">
                 <div
-                    class="bg-white/95 backdrop-blur-[20px] rounded-[20px] p-8 max-w-[500px] w-[90%] max-h-[80vh] overflow-y-auto text-[#333]">
-                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-black/10">
-                        <h3 class="text-2xl font-semibold">How to Play</h3>
-                        <button
-                            class="bg-none border-none text-2xl cursor-pointer text-[#666] p-2 rounded-full transition-all duration-300 hover:bg-black/10 hover:text-[#333]"
-                            id="closeModal">
-                            <i class="ri-close-line"></i>
-                        </button>
-                    </div>
-                    <div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-arrow-up-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Use Arrow Keys (↑↓←→) to control the snake</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-keyboard-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Or use WASD keys (W=Up, A=Left, S=Down, D=Right)</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-smartphone-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>On mobile: Use the directional buttons below the game</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-pause-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Press SPACEBAR or Pause button to pause/unpause</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-restaurant-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Eat red food to grow and increase your score (+10 points)</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-speed-up-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Game speed increases every 50 points</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-skull-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Avoid hitting walls or yourself - Game Over!</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-4 p-4 mb-2 bg-black/5 rounded-[10px] transition-all duration-300 hover:bg-black/10 hover:translate-x-1">
-                            <i class="ri-trophy-line text-2xl text-[#667eea] w-[30px] text-center"></i>
-                            <span>Try to beat your high score and set new records</span>
-                        </div>
-                    </div>
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/70"
+                >
+                  <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400">
+                  </span>
+                  En línea
                 </div>
-            </div>
-        </main>
+              </div>
 
-        <!-- About Page -->
-        <main class="hidden flex-1 p-8 flex items-center justify-center" id="aboutPage">
-            <div class="max-w-[800px] text-center">
+              <div
+                class="relative mt-2 rounded-2xl bg-[#020617] border border-white/10 h-[220px] overflow-hidden flex items-center justify-center"
+              >
+                <div class="flex items-center gap-1.5 animate-float">
+                  <div
+                    class="w-[26px] h-[26px] rounded-md shadow-[0_4px_8px_rgba(0,0,0,0.25)] bg-gradient-to-br from-[#22c55e] to-[#16a34a]"
+                  ></div>
+                  <div
+                    class="w-[26px] h-[26px] rounded-md shadow-[0_4px_8px_rgba(0,0,0,0.25)] bg-gradient-to-br from-[#22c55e] to-[#16a34a]"
+                  ></div>
+                  <div
+                    class="w-[26px] h-[26px] rounded-md shadow-[0_4px_8px_rgba(0,0,0,0.25)] bg-gradient-to-br from-[#22c55e] to-[#16a34a]"
+                  ></div>
+                  <div
+                    class="w-[26px] h-[26px] rounded-md shadow-[0_4px_8px_rgba(0,0,0,0.25)] bg-gradient-to-br from-[#f97316] to-[#ea580c]"
+                  ></div>
+                </div>
+
+                <div
+                  class="absolute right-6 top-6 w-[22px] h-[22px] bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-full animate-pulse-food shadow-[0_0_18px_rgba(249,115,22,0.55)]"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div
+              class="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 backdrop-blur-[12px]"
+            >
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base sm:text-lg font-semibold">
+                  Ranking Beexo
+                </h3>
+                <span class="text-[11px] sm:text-xs text-white/60"
+                  >Top 10 (local)</span
+                >
+              </div>
+              <ol
+                id="leaderboardList"
+                class="space-y-1.5 text-xs sm:text-sm text-white/85"
+              >
+                <!-- se llena desde main.js -->
+              </ol>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- About Page -->
+      <main
+        class="hidden flex-1 p-8 flex items-center justify-center"
+        id="aboutPage"
+      >
+        <div class="max-w-[800px] text-center space-y-6">
+          <h2
+            class="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-white to-[#e0e7ff] bg-clip-text text-transparent"
+          >
+            Sobre Beexo Snake
+          </h2>
+
+          <p class="opacity-90">
+            Beexo Snake es una versión mejorada del clásico juego de la
+            viborita, integrada con Beexo para que puedas identificarte con tu
+            alias y firmar tu score con tu wallet.
+          </p>
+
+          <div
+            class="bg-white/10 backdrop-blur-[10px] rounded-[20px] p-6 border border-white/20 text-left space-y-3"
+          >
+            <h3 class="text-xl font-semibold mb-2">Cómo funciona</h3>
+            <ul class="list-disc list-inside text-sm space-y-1.5 opacity-90">
+              <li>Ingresás tu alias de Beexo.</li>
+              <li>Conectás tu wallet (XOConnect debajo del capot).</li>
+              <li>Jugás Snake y sumás puntos comiendo la comida roja.</li>
+              <li>Al terminar, tu score se firma con tu cuenta.</li>
+              <li>Guardamos un ranking local con los mejores puntajes.</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+
+      <!-- Game Page -->
+      <main
+        class="hidden flex-1 p-4 sm:p-8 flex items-center justify-center"
+        id="gamePage"
+      >
+        <div class="max-w-[1000px] w-full">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-center mb-8 p-4 bg-black/30 rounded-2xl backdrop-blur-[10px] gap-4 border border-white/10"
+          >
+            <div class="flex gap-4 items-center">
+              <button
+                class="bg-transparent border border-white/30 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 flex items-center gap-2 text-sm hover:bg-white/10 hover:-translate-y-0.5"
+                id="backToHome"
+              >
+                <i class="ri-arrow-left-line"></i> Inicio
+              </button>
+              <button
+                class="bg-transparent border border-white/30 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 flex items-center gap-2 text-sm hover:bg-white/10 hover:-translate-y-0.5"
+                id="pauseBtn"
+              >
+                <i class="ri-pause-line"></i>
+              </button>
+            </div>
+            <div
+              class="flex flex-col sm:flex-row items-center gap-1 sm:gap-6 text-sm sm:text-lg font-semibold"
+            >
+              <span id="score">Score: 0</span>
+              <span id="highScore">Best: 0</span>
+              <span class="text-xs sm:text-sm text-white/70">
+                Jugador: <span class="xo-alias font-semibold">Sin alias</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="relative flex justify-center mb-8">
+            <canvas
+              id="gameCanvas"
+              class="border-4 border-white/20 rounded-2xl bg-[#020617] shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full"
+            ></canvas>
+
+            <div
+              id="gameOverScreen"
+              class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 backdrop-blur-[20px] rounded-[20px] p-8 text-center border-2 border-white/20 w-[85%] sm:w-[40%] md:w-[36%] lg:w-[30%]"
+            >
+              <div>
                 <h2
-                    class="text-4xl sm:text-5xl font-bold mb-8 bg-gradient-to-r from-white to-[#e0e7ff] bg-clip-text text-transparent">
-                    About Developer</h2>
+                  class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 text-[#f97316]"
+                >
+                  ¡Game Over!
+                </h2>
+                <p
+                  id="finalScore"
+                  class="text-base sm:text-xl mb-2 opacity-90"
+                >
+                  Your Score: 0
+                </p>
+                <p
+                  id="newRecord"
+                  class="text-emerald-400 font-semibold animate-bounce-score text-sm sm:text-lg hidden"
+                >
+                  🎉 ¡Nuevo récord!
+                </p>
 
-                <div class="bg-white/10 backdrop-blur-[10px] rounded-[20px] p-8 mb-8 border border-white/20">
-                    <h3 class="text-2xl sm:text-3xl font-semibold mb-4 text-white">Nischay Bandodiya</h3>
-                    <p class="opacity-90 mb-6">
-                        Full Stack Developer passionate about creating engaging web experiences.
-                        This Snake Game is built with modern web technologies for smooth gameplay across all devices.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-                        <a href="https://nischay-bandodiya-portfolio.vercel.app" target="_blank"
-                            class="bg-gradient-to-r from-[#667eea] to-[#764ba2] border-none text-white px-6 py-3 rounded-[25px] no-underline font-medium transition-all duration-300 flex items-center justify-center gap-2 w-full sm:w-auto hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(102,126,234,0.4)]">
-                            <i class="ri-global-line"></i> Portfolio
-                        </a>
-                        <a href="https://github.com/Nischayb99" target="_blank"
-                            class="bg-gradient-to-r from-[#667eea] to-[#764ba2] border-none text-white px-6 py-3 rounded-[25px] no-underline font-medium transition-all duration-300 flex items-center justify-center gap-2 w-full sm:w-auto hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(102,126,234,0.4)]">
-                            <i class="ri-github-line"></i> GitHub
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-white/10 backdrop-blur-[10px] rounded-[20px] p-8 border border-white/20">
-                    <h3 class="text-2xl font-semibold mb-4">Built With</h3>
-                    <div class="flex gap-4 justify-center flex-wrap">
-                        <span class="bg-white/20 px-4 py-2 rounded-2xl font-medium">HTML5 Canvas</span>
-                        <span class="bg-white/20 px-4 py-2 rounded-2xl font-medium">Tailwind CSS</span>
-                        <span class="bg-white/20 px-4 py-2 rounded-2xl font-medium">JavaScript</span>
-                        <span class="bg-white/20 px-4 py-2 rounded-2xl font-medium">Responsive Design</span>
-                    </div>
-                </div>
+                <button
+                  id="restartButton"
+                  class="bg-gradient-to-r from-[#22c55e] to-[#16a34a] border-none text-white px-5 py-3 rounded-full text-lg font-semibold cursor-pointer transition-all duration-300 flex items-center gap-2 shadow-[0_4px_15px_rgba(34,197,94,0.35)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(34,197,94,0.45)] mx-auto mt-4"
+                >
+                  <i class="ri-refresh-line"></i>
+                  <span class="text-base sm:text-xl">Jugar de nuevo</span>
+                </button>
+              </div>
             </div>
-        </main>
+          </div>
 
-        <!-- Game Page -->
-        <main class="hidden flex-1 p-4 sm:p-8 flex items-center justify-center" id="gamePage">
-            <div class="max-w-[1000px] w-full">
-                <div
-                    class="flex flex-col sm:flex-row justify-between items-center mb-8 p-4 bg-black/20 rounded-2xl backdrop-blur-[10px] gap-4">
-                    <div class="flex gap-4 items-center">
-                        <button
-                            class="bg-transparent border-2 border-white/30 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 flex items-center gap-2 text-sm hover:bg-white/10 hover:-translate-y-0.5"
-                            id="backToHome">
-                            <i class="ri-arrow-left-line"></i> Home
-                        </button>
-                        <button
-                            class="bg-transparent border-2 border-white/30 text-white px-4 py-2 rounded-full cursor-pointer transition-all duration-300 flex items-center gap-2 text-sm hover:bg-white/10 hover:-translate-y-0.5"
-                            id="pauseBtn">
-                            <i class="ri-pause-line"></i>
-                        </button>
-                    </div>
-                    <div class="flex gap-4 sm:gap-8 text-base sm:text-xl font-semibold">
-                        <span id="score">Score: 0</span>
-                        <span id="highScore">Best: 0</span>
-                    </div>
-                </div>
-
-                <div class="relative flex justify-center mb-8">
-                    <canvas id="gameCanvas"
-                        class="border-4 border-white/30 rounded-2xl bg-[#1a1a2e] shadow-[0_10px_30px_rgba(0,0,0,0.3)] w-full"></canvas>
-
-                    <div id="gameOverScreen"
-                        class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 backdrop-blur-[20px] rounded-[20px] p-8 text-center border-2 border-white/20 w-[85%] sm:w-[40%] md:w-[36%] lg:w-[30%]">
-                        <div>
-                            <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 text-[#ef4444]">Game Over!
-                            </h2>
-                            <p id="finalScore" class="text-base sm:text-xl mb-2 opacity-90">Your Score: 0</p>
-                            <p id="newRecord"
-                                class=" text-[#10b981] font-semibold animate-bounce-score text-xm sm:text-xl">🎉
-                                New
-                                High Score!</p>
-
-                            <button id="restartButton"
-                                class="bg-gradient-to-r from-[#10b981] to-[#059669] border-none text-white px-5 py-3 rounded-full text-lg font-semibold cursor-pointer transition-all duration-300 flex items-center gap-2 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] mx-auto mt-4">
-                                <i class="ri-refresh-line"></i><span class="text-base sm:text-xl">Play Again</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-center">
-                    <div class="flex flex-col items-center gap-2 mb-4">
-                        <button
-                            class="control-btn w-[60px] h-[60px] bg-white/20 border-2 border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/30 hover:scale-110 active:scale-95 active:bg-white/40"
-                            data-direction="UP" ontouchstart="">
-                            <i class="ri-arrow-up-line"></i>
-                        </button>
-                        <div class="flex gap-2">
-                            <button
-                                class="control-btn w-[60px] h-[60px] bg-white/20 border-2 border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/30 hover:scale-110 active:scale-95 active:bg-white/40"
-                                data-direction="LEFT" ontouchstart="">
-                                <i class="ri-arrow-left-line"></i>
-                            </button>
-                            <button
-                                class="control-btn w-[60px] h-[60px] bg-white/20 border-2 border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/30 hover:scale-110 active:scale-95 active:bg-white/40"
-                                data-direction="DOWN" ontouchstart="">
-                                <i class="ri-arrow-down-line"></i>
-                            </button>
-                            <button
-                                class="control-btn w-[60px] h-[60px] bg-white/20 border-2 border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/30 hover:scale-110 active:scale-95 active:bg-white/40"
-                                data-direction="RIGHT" ontouchstart="">
-                                <i class="ri-arrow-right-line"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="opacity-70 text-sm mt-4">Use arrow keys, WASD, or buttons to control • SPACE to pause</p>
-                </div>
+          <div class="text-center">
+            <div class="flex flex-col items-center gap-2 mb-4">
+              <button
+                class="control-btn w-[60px] h-[60px] bg-white/10 border border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/20 hover:scale-110 active:scale-95"
+                data-direction="UP"
+                ontouchstart=""
+              >
+                <i class="ri-arrow-up-line"></i>
+              </button>
+              <div class="flex gap-2">
+                <button
+                  class="control-btn w-[60px] h-[60px] bg-white/10 border border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/20 hover:scale-110 active:scale-95"
+                  data-direction="LEFT"
+                  ontouchstart=""
+                >
+                  <i class="ri-arrow-left-line"></i>
+                </button>
+                <button
+                  class="control-btn w-[60px] h-[60px] bg-white/10 border border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/20 hover:scale-110 active:scale-95"
+                  data-direction="DOWN"
+                  ontouchstart=""
+                >
+                  <i class="ri-arrow-down-line"></i>
+                </button>
+                <button
+                  class="control-btn w-[60px] h-[60px] bg-white/10 border border-white/30 rounded-2xl text-white text-2xl cursor-pointer transition-all duration-300 flex items-center justify-center select-none hover:bg-white/20 hover:scale-110 active:scale-95"
+                  data-direction="RIGHT"
+                  ontouchstart=""
+                >
+                  <i class="ri-arrow-right-line"></i>
+                </button>
+              </div>
             </div>
-        </main>
+            <p class="opacity-70 text-xs sm:text-sm mt-4">
+              Flechas o WASD para moverte • ESPACIO para pausar
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
 
-    <script>
-
-        // Game state
-        let gameState = {
-            isRunning: false,
-            isPaused: false,
-            score: 0,
-            highScore: localStorage.getItem('snakeHighScore') || 0,
-            speed: 150,
-            level: 1
-        };
-
-        // DOM elements
-        const homePage = document.getElementById('homePage');
-        const aboutPage = document.getElementById('aboutPage');
-        const gamePage = document.getElementById('gamePage');
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const highScoreElement = document.getElementById('highScore');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const finalScoreElement = document.getElementById('finalScore');
-        const newRecordElement = document.getElementById('newRecord');
-
-        // Navigation
-        const navBtns = document.querySelectorAll('.nav-btn');
-        const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
-        const startGameBtn = document.getElementById('startGameBtn');
-        const backToHomeBtn = document.getElementById('backToHome');
-        const restartBtn = document.getElementById('restartButton');
-        const pauseBtn = document.getElementById('pauseBtn');
-
-        // Mobile Menu
-        const menuToggle = document.getElementById('menuToggle');
-        const mobileNav = document.getElementById('mobileNav');
-        const mobileOverlay = document.getElementById('mobileOverlay');
-        const mobileClose = document.getElementById('mobileClose');
-
-        // Modal
-        const howToPlayBtn = document.getElementById('howToPlayBtn');
-        const howToPlayModal = document.getElementById('howToPlayModal');
-        const closeModalBtn = document.getElementById('closeModal');
-
-        // Game settings
-        const CANVAS_WIDTH = 800;
-        const CANVAS_HEIGHT = 500;
-        const GRID_SIZE = 20;
-
-        // Set canvas size
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
-
-        // Game objects
-        let snake = [];
-        let food = {};
-        let direction = '';
-        let gameLoop = null;
-
-        // Colors
-        const COLORS = {
-            background: '#1a1a2e',
-            snakeHead: '#f59e0b',
-            snakeBody: '#10b981',
-            food: '#ef4444',
-            border: '#4f46e5'
-        };
-
-        // Initialize game
-        function initGame() {
-            snake = [
-                { x: GRID_SIZE * 10, y: GRID_SIZE * 10 },
-                { x: GRID_SIZE * 9, y: GRID_SIZE * 10 },
-                { x: GRID_SIZE * 8, y: GRID_SIZE * 10 }
-            ];
-
-            generateFood();
-            gameState.score = 0;
-            gameState.speed = 150;
-            gameState.level = 1;
-            direction = 'RIGHT';
-
-            updateScore();
-            updateHighScore();
-            updatePauseButton();
-        }
-
-        // Generate food at random position
-        function generateFood() {
-            const maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE) - 1;
-            const maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE) - 1;
-
-            do {
-                food = {
-                    x: Math.floor(Math.random() * maxX) * GRID_SIZE,
-                    y: Math.floor(Math.random() * maxY) * GRID_SIZE
-                };
-            } while (snake.some(segment => segment.x === food.x && segment.y === food.y));
-        }
-
-        // Draw game elements
-        function draw() {
-            // Clear canvas with gradient background
-            const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            gradient.addColorStop(0, '#1a1a2e');
-            gradient.addColorStop(1, '#16213e');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-            // Draw snake
-            snake.forEach((segment, index) => {
-                const isHead = index === 0;
-
-                // Snake body/head
-                ctx.fillStyle = isHead ? COLORS.snakeHead : COLORS.snakeBody;
-                ctx.fillRect(segment.x, segment.y, GRID_SIZE, GRID_SIZE);
-
-                // Border
-                ctx.strokeStyle = isHead ? '#fff' : '#065f46';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(segment.x, segment.y, GRID_SIZE, GRID_SIZE);
-
-                // Snake head eyes
-                if (isHead) {
-                    ctx.fillStyle = '#000';
-                    const eyeSize = 3;
-                    const eyeOffset = 5;
-
-                    if (direction === 'RIGHT') {
-                        ctx.fillRect(segment.x + GRID_SIZE - eyeOffset, segment.y + 4, eyeSize, eyeSize);
-                        ctx.fillRect(segment.x + GRID_SIZE - eyeOffset, segment.y + GRID_SIZE - 7, eyeSize, eyeSize);
-                    } else if (direction === 'LEFT') {
-                        ctx.fillRect(segment.x + 2, segment.y + 4, eyeSize, eyeSize);
-                        ctx.fillRect(segment.x + 2, segment.y + GRID_SIZE - 7, eyeSize, eyeSize);
-                    } else if (direction === 'UP') {
-                        ctx.fillRect(segment.x + 4, segment.y + 2, eyeSize, eyeSize);
-                        ctx.fillRect(segment.x + GRID_SIZE - 7, segment.y + 2, eyeSize, eyeSize);
-                    } else if (direction === 'DOWN') {
-                        ctx.fillRect(segment.x + 4, segment.y + GRID_SIZE - eyeOffset, eyeSize, eyeSize);
-                        ctx.fillRect(segment.x + GRID_SIZE - 7, segment.y + GRID_SIZE - eyeOffset, eyeSize, eyeSize);
-                    }
-                }
-            });
-
-            // Draw food with glow effect
-            const foodGradient = ctx.createRadialGradient(
-                food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, 0,
-                food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, GRID_SIZE
-            );
-            foodGradient.addColorStop(0, COLORS.food);
-            foodGradient.addColorStop(1, '#dc2626');
-
-            ctx.fillStyle = foodGradient;
-            ctx.beginPath();
-            ctx.arc(food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, GRID_SIZE / 2 - 2, 0, 2 * Math.PI);
-            ctx.fill();
-
-            // Food shine effect
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.beginPath();
-            ctx.arc(food.x + GRID_SIZE / 2 - 3, food.y + GRID_SIZE / 2 - 3, 3, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-
-        // Update game logic
-        function update() {
-            if (!gameState.isRunning || gameState.isPaused) return;
-
-            const head = { ...snake[0] };
-
-            // Move snake head based on direction
-            switch (direction) {
-                case 'UP': head.y -= GRID_SIZE; break;
-                case 'DOWN': head.y += GRID_SIZE; break;
-                case 'LEFT': head.x -= GRID_SIZE; break;
-                case 'RIGHT': head.x += GRID_SIZE; break;
-                default: return;
-            }
-
-            // Wall collision detection
-            if (head.x < 0 || head.x >= CANVAS_WIDTH ||
-                head.y < 0 || head.y >= CANVAS_HEIGHT) {
-                gameOver();
-                return;
-            }
-
-            // Self collision detection
-            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                gameOver();
-                return;
-            }
-
-            snake.unshift(head);
-
-            // Check food collision
-            if (head.x === food.x && head.y === food.y) {
-                gameState.score += 10;
-                updateScore();
-                generateFood();
-
-                // Increase speed every 50 points
-                if (gameState.score % 50 === 0) {
-                    gameState.speed = Math.max(80, gameState.speed - 10);
-                    gameState.level++;
-                    clearInterval(gameLoop);
-                    gameLoop = setInterval(() => {
-                        update();
-                        draw();
-                    }, gameState.speed);
-                }
-            } else {
-                snake.pop();
-            }
-
-            draw();
-        }
-
-        // Handle keyboard input
-        function handleKeyPress(event) {
-            if (!gameState.isRunning) return;
-
-            const key = event.key.toLowerCase();
-            const newDirection = {
-                'arrowup': 'UP',
-                'arrowdown': 'DOWN',
-                'arrowleft': 'LEFT',
-                'arrowright': 'RIGHT',
-                'w': 'UP',
-                's': 'DOWN',
-                'a': 'LEFT',
-                'd': 'RIGHT'
-            }[key];
-
-            if (newDirection && !isOppositeDirection(newDirection, direction)) {
-                direction = newDirection;
-            }
-
-            // Pause game with spacebar
-            if (key === ' ') {
-                event.preventDefault();
-                togglePause();
-            }
-        }
-
-        // Check if new direction is opposite to current direction
-        function isOppositeDirection(newDir, currentDir) {
-            const opposites = {
-                'UP': 'DOWN',
-                'DOWN': 'UP',
-                'LEFT': 'RIGHT',
-                'RIGHT': 'LEFT'
-            };
-            return opposites[newDir] === currentDir;
-        }
-
-        // Toggle game pause
-        function togglePause() {
-            if (!gameState.isRunning) return;
-
-            gameState.isPaused = !gameState.isPaused;
-            updatePauseButton();
-
-            if (gameState.isPaused) {
-                clearInterval(gameLoop);
-            } else {
-                gameLoop = setInterval(() => {
-                    update();
-                    draw();
-                }, gameState.speed);
-            }
-        }
-
-        // Update pause button
-        function updatePauseButton() {
-            const icon = pauseBtn.querySelector('i');
-            const text = pauseBtn.childNodes[1];
-
-            if (gameState.isPaused) {
-                icon.className = 'ri-play-line';
-                text.textContent = ' Resume';
-                pauseBtn.classList.add('paused');
-            } else {
-                icon.className = 'ri-pause-line';
-                text.textContent = ' Pause';
-                pauseBtn.classList.remove('paused');
-            }
-        }
-
-        // Start game
-        function startGame() {
-            gameState.isRunning = true;
-            gameState.isPaused = false;
-            initGame();
-            draw();
-
-            gameLoop = setInterval(() => {
-                update();
-                draw();
-            }, gameState.speed);
-        }
-
-        // Game over
-        function gameOver() {
-            gameState.isRunning = false;
-            clearInterval(gameLoop);
-
-            // Check for new high score
-            if (gameState.score > gameState.highScore) {
-                gameState.highScore = gameState.score;
-                localStorage.setItem('snakeHighScore', gameState.highScore);
-                newRecordElement.classList.remove('hidden');
-                updateHighScore();
-            } else {
-                newRecordElement.classList.add('hidden');
-            }
-
-            finalScoreElement.textContent = `Your Score: ${gameState.score}`;
-            gameOverScreen.classList.remove('hidden');
-        }
-
-        // Update score display
-        function updateScore() {
-            scoreElement.textContent = `Score: ${gameState.score}`;
-        }
-
-        // Update high score display
-        function updateHighScore() {
-            highScoreElement.textContent = `Best: ${gameState.highScore}`;
-        }
-
-        // Navigation functions
-        function showHomePage() {
-            homePage.classList.remove('hidden');
-            aboutPage.classList.add('hidden');
-            gamePage.classList.add('hidden');
-            updateActiveNavigation('home');
-            closeMobileMenu();
-
-            // Stop game if running
-            if (gameState.isRunning) {
-                gameState.isRunning = false;
-                clearInterval(gameLoop);
-            }
-        }
-
-        function showAboutPage() {
-            homePage.classList.add('hidden');
-            aboutPage.classList.remove('hidden');
-            gamePage.classList.add('hidden');
-            updateActiveNavigation('about');
-            closeMobileMenu();
-
-            // Stop game if running
-            if (gameState.isRunning) {
-                gameState.isRunning = false;
-                clearInterval(gameLoop);
-            }
-        }
-
-        function showGamePage() {
-            homePage.classList.add('hidden');
-            aboutPage.classList.add('hidden');
-            gamePage.classList.remove('hidden');
-            updateActiveNavigation('game');
-            closeMobileMenu();
-            gameOverScreen.classList.add('hidden');
-
-            // Initialize and start game
-            startGame();
-        }
-
-        function updateActiveNavigation(activePage) {
-            // Update desktop navigation
-            navBtns.forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`[data-page="${activePage}"]`).classList.add('active');
-
-            // Update mobile navigation
-            mobileNavBtns.forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.mobile-nav-btn[data-page="${activePage}"]`).classList.add('active');
-        }
-
-        // Mobile Menu Functions
-        function openMobileMenu() {
-            mobileNav.classList.add('active');
-            mobileOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeMobileMenu() {
-            mobileNav.classList.remove('active');
-            mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        // Event listeners
-        document.addEventListener('keydown', handleKeyPress);
-
-        // Desktop Navigation event listeners
-        navBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const page = btn.dataset.page;
-                if (page === 'home') {
-                    showHomePage();
-                } else if (page === 'game') {
-                    showGamePage();
-                } else if (page === 'about') {
-                    showAboutPage();
-                }
-            });
-        });
-
-        // Mobile Navigation event listeners
-        mobileNavBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const page = btn.dataset.page;
-                if (page === 'home') {
-                    showHomePage();
-                } else if (page === 'game') {
-                    showGamePage();
-                } else if (page === 'about') {
-                    showAboutPage();
-                }
-            });
-        });
-
-        // Mobile Menu Toggle Events
-        menuToggle.addEventListener('click', openMobileMenu);
-        mobileClose.addEventListener('click', closeMobileMenu);
-        mobileOverlay.addEventListener('click', closeMobileMenu);
-
-        // Close mobile menu on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeMobileMenu();
-            }
-        });
-
-        // Game control buttons
-        startGameBtn.addEventListener('click', showGamePage);
-        backToHomeBtn.addEventListener('click', showHomePage);
-        pauseBtn.addEventListener('click', togglePause);
-        restartBtn.addEventListener('click', () => {
-            gameOverScreen.classList.add('hidden');
-            startGame();
-        });
-
-        // Enhanced touch/click controls for mobile
-        document.querySelectorAll('.control-btn').forEach(btn => {
-            // Handle both touch and click events
-            const handleDirectionChange = (e) => {
-                e.preventDefault();
-                const newDirection = btn.dataset.direction;
-                if (gameState.isRunning && !gameState.isPaused && !isOppositeDirection(newDirection, direction)) {
-                    direction = newDirection;
-                }
-
-                // Visual feedback
-                btn.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    btn.style.transform = '';
-                }, 100);
-            };
-
-            btn.addEventListener('touchstart', handleDirectionChange, { passive: false });
-            btn.addEventListener('click', handleDirectionChange);
-
-            // Prevent context menu on long press
-            btn.addEventListener('contextmenu', (e) => e.preventDefault());
-        });
-
-        // Modal event listeners
-        howToPlayBtn.addEventListener('click', () => {
-            howToPlayModal.classList.remove('hidden');
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            howToPlayModal.classList.add('hidden');
-        });
-
-        // Close modal when clicking outside
-        howToPlayModal.addEventListener('click', (e) => {
-            if (e.target === howToPlayModal) {
-                howToPlayModal.classList.add('hidden');
-            }
-        });
-
-        // Initialize high score display
-        updateHighScore();
-
-        // Responsive canvas sizing
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            const containerWidth = container.clientWidth;
-            const maxWidth = Math.min(containerWidth - 40, CANVAS_WIDTH);
-
-            if (window.innerWidth <= 768) {
-                const scale = maxWidth / CANVAS_WIDTH;
-                canvas.style.width = maxWidth + 'px';
-                canvas.style.height = (CANVAS_HEIGHT * scale) + 'px';
-            } else {
-                canvas.style.width = CANVAS_WIDTH + 'px';
-                canvas.style.height = CANVAS_HEIGHT + 'px';
-            }
-        }
-
-        // Handle window resize
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('load', resizeCanvas);
-
-        // Prevent default arrow key behavior
-        document.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-                e.preventDefault();
-            }
-        });
-
-        // Prevent zoom on double tap for mobile
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        // Initial setup
-        document.addEventListener('DOMContentLoaded', () => {
-            showHomePage();
-            resizeCanvas();
-        });
-    </script>
-</body>
-
+    <!-- Vite bundle -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
