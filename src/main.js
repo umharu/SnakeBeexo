@@ -1,4 +1,4 @@
-// src/main.js - Bexxo Snake Game con integración de Wallet
+// src/main.js - Bexxo Snake Game con VALIDACIÓN DE ALIAS OBLIGATORIA
 import { XOConnectProvider, XOConnect } from "xo-connect";
 import { ethers } from "ethers";
 
@@ -7,10 +7,8 @@ let xoConnect = null;
 let signer = null;
 let address = null;
 let currentAlias = ""; // alias actual del jugador
-
-// Imagen del logo para usar como comida
-const foodImage = new Image();
-foodImage.src = "/logo.png";
+let isConnected = false;
+let hasValidAlias = false; // NUEVO: bandera para validar si tiene alias válido
 
 // Referencias a elementos de alias / UI
 const aliasInput = document.getElementById("aliasInput");
@@ -99,107 +97,181 @@ if (mobileOverlay) {
   mobileOverlay.addEventListener("click", closeMobileMenu);
 }
 
-// ==================== CONEXIÓN BEXXO ====================
+// ==================== VALIDACIÓN DE ALIAS ====================
+
+/**
+ * Valida si el alias es válido (no vacío, no null, no undefined)
+ * @param {string} alias - El alias a validar
+ * @returns {boolean} - true si es válido, false si no
+ */
+function isValidAlias(alias) {
+  return (
+    alias !== null &&
+    alias !== undefined &&
+    typeof alias === "string" &&
+    alias.trim() !== "" &&
+    alias.toLowerCase() !== "sin alias" &&
+    alias.toLowerCase() !== "null" &&
+    alias.toLowerCase() !== "undefined"
+  );
+}
+
+/**
+ * Muestra un mensaje de error cuando no hay alias válido
+ */
+function showAliasError() {
+  alert(
+    "❌ NO TIENES UN ALIAS VÁLIDO EN BEEXO\n\n" +
+    "Para jugar necesitas:\n" +
+    "1. Tener un alias configurado en tu wallet Beexo\n" +
+    "2. El alias debe ser derivado de tu seed phrase\n\n" +
+    "Por favor, configura tu alias en Beexo antes de jugar."
+  );
+}
+
+/**
+ * Bloquea el acceso al juego mostrando mensaje de error
+ */
+function blockGameAccess(reason) {
+  console.error("🚫 Acceso al juego bloqueado:", reason);
+  
+  // Resetear estado del botón
+  if (aliasPlayBtn) {
+    aliasPlayBtn.disabled = false;
+    aliasPlayBtn.textContent = "JUGAR";
+  }
+  
+  // Mostrar error específico según la razón
+  switch(reason) {
+    case "NO_ALIAS":
+      showAliasError();
+      break;
+    case "CONNECTION_FAILED":
+      alert("❌ Error de conexión\n\nNo se pudo conectar con Beexo Wallet.\nPor favor, intenta nuevamente.");
+      break;
+    case "NO_ADDRESS":
+      alert("❌ Error de autenticación\n\nNo se pudo obtener la dirección de tu wallet.\nPor favor, verifica tu conexión.");
+      break;
+    default:
+      alert("❌ Error\n\nHubo un problema al validar tu cuenta.\nPor favor, intenta nuevamente.");
+  }
+  
+  // Asegurar que estamos en la página de inicio
+  showPage("home");
+}
+
+// ==================== CONEXIÓN BEXXO CON VALIDACIÓN ====================
+
 async function connectBexxoWallet() {
   try {
-    console.log("🔌 Conectando con Bexxo Wallet...");
+    console.log("🔌 Iniciando conexión con Bexxo Wallet...");
 
+    // Validar que el input tiene un alias (opcional, ya que Bexxo debería proporcionarlo)
+    const inputAlias = aliasInput?.value?.trim() || "";
+    
     // Mostrar estado de carga
     if (aliasPlayBtn) {
       aliasPlayBtn.disabled = true;
       aliasPlayBtn.textContent = "CONECTANDO...";
     }
 
-    // Inicializar XOConnect
+    // PASO 1: Inicializar XOConnect
+    console.log("📡 Inicializando XOConnect...");
     xoConnect = new XOConnect();
 
-    // Conectar a Bexxo wallet
+    // PASO 2: Conectar a Bexxo wallet
+    console.log("🔐 Conectando a Bexxo Wallet...");
     await xoConnect.connect();
+    console.log("✅ Conexión establecida");
 
-    // Obtener provider y signer
+    // PASO 3: Obtener provider y signer
     const provider = xoConnect.getProvider();
-    signer = provider.getSigner();
-    address = await signer.getAddress();
-
-    // Obtener alias de Bexxo (derivado del seed phrase)
-    const bexxoAlias = xoConnect.getAlias();
-
-    // Si Bexxo proporciona un alias, usarlo. Si no, usar el del input o generar uno
-    if (bexxoAlias && bexxoAlias.trim() !== "") {
-      currentAlias = bexxoAlias;
-      if (aliasInput) {
-        aliasInput.value = bexxoAlias;
-      }
-    } else if (aliasInput && aliasInput.value.trim() !== "") {
-      currentAlias = aliasInput.value.trim();
-    } else {
-      currentAlias = generateAliasFromAddress(address);
-      if (aliasInput) {
-        aliasInput.value = currentAlias;
-      }
+    if (!provider) {
+      throw new Error("No se pudo obtener el provider de Bexxo");
     }
 
-    console.log("✅ Conectado a Bexxo:", { address, alias: currentAlias });
+    signer = provider.getSigner();
+    if (!signer) {
+      throw new Error("No se pudo obtener el signer");
+    }
+
+    // PASO 4: Obtener dirección de la wallet
+    console.log("📍 Obteniendo dirección de wallet...");
+    address = await signer.getAddress();
+    
+    if (!address || address === "") {
+      console.error("❌ No se pudo obtener la dirección de la wallet");
+      blockGameAccess("NO_ADDRESS");
+      return false;
+    }
+    
+    console.log("✅ Dirección obtenida:", address);
+
+    // PASO 5: VALIDACIÓN CRÍTICA - Obtener alias de Bexxo
+    console.log("🏷️ Obteniendo alias de Bexxo...");
+    const bexxoAlias = xoConnect.getAlias();
+    
+    console.log("🔍 Alias recibido de Bexxo:", bexxoAlias);
+    console.log("🔍 Tipo de alias:", typeof bexxoAlias);
+    console.log("🔍 Alias es válido?", isValidAlias(bexxoAlias));
+
+    // VALIDACIÓN ESTRICTA DEL ALIAS
+    if (!isValidAlias(bexxoAlias)) {
+      console.error("❌ ALIAS INVÁLIDO O NO EXISTE");
+      console.error("   - Alias recibido:", bexxoAlias);
+      console.error("   - Se requiere un alias válido para jugar");
+      
+      // BLOQUEAR ACCESO AL JUEGO
+      hasValidAlias = false;
+      isConnected = false;
+      blockGameAccess("NO_ALIAS");
+      return false;
+    }
+
+    // ALIAS VÁLIDO - Continuar
+    currentAlias = bexxoAlias;
+    hasValidAlias = true;
+    isConnected = true;
+    
+    console.log("✅ ALIAS VÁLIDO:", currentAlias);
+
+    // Actualizar input con el alias de Bexxo
+    if (aliasInput) {
+      aliasInput.value = currentAlias;
+    }
 
     // Actualizar UI
     updateAliasUI(currentAlias);
     loadUserHighScore();
 
-    // Ir a la página de juego
+    // SOLO SI TODO ES VÁLIDO, ir a la página de juego
+    console.log("🎮 Iniciando juego...");
     showPage("game");
     initGame();
     startGame();
 
     return true;
+    
   } catch (error) {
-    console.error("❌ Error conectando con Bexxo:", error);
+    console.error("❌ Error en connectBexxoWallet:", error);
+    console.error("   Tipo de error:", error.name);
+    console.error("   Mensaje:", error.message);
+    console.error("   Stack:", error.stack);
 
-    alert(
-      "No se pudo conectar con Bexxo Wallet. Asegúrate de tener la extensión instalada."
-    );
-
-    if (aliasPlayBtn) {
-      aliasPlayBtn.disabled = false;
-      aliasPlayBtn.textContent = "JUGAR";
+    hasValidAlias = false;
+    isConnected = false;
+    
+    // Manejar diferentes tipos de errores
+    if (error.message && error.message.includes("alias")) {
+      blockGameAccess("NO_ALIAS");
+    } else if (error.message && error.message.includes("address")) {
+      blockGameAccess("NO_ADDRESS");
+    } else {
+      blockGameAccess("CONNECTION_FAILED");
     }
 
     return false;
   }
-}
-
-// Generar alias desde address si no hay uno de Bexxo
-function generateAliasFromAddress(addr) {
-  const adjectives = [
-    "Swift",
-    "Brave",
-    "Wise",
-    "Noble",
-    "Fierce",
-    "Quick",
-    "Bold",
-    "Silent",
-    "Mighty",
-    "Clever",
-  ];
-  const nouns = [
-    "Snake",
-    "Dragon",
-    "Phoenix",
-    "Tiger",
-    "Warrior",
-    "Hunter",
-    "Viper",
-    "Cobra",
-    "Python",
-    "Serpent",
-  ];
-
-  const hash = addr.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const adj = adjectives[hash % adjectives.length];
-  const noun = nouns[Math.floor(hash / 100) % nouns.length];
-  const num = (hash % 9999).toString().padStart(4, "0");
-
-  return `${adj}${noun}#${num}`;
 }
 
 // Actualizar textos donde aparece el alias
@@ -212,7 +284,7 @@ function updateAliasUI(alias) {
 
 // ==================== HIGH SCORE Y LEADERBOARD ====================
 function loadUserHighScore() {
-  if (!address) return 0;
+  if (!address || !hasValidAlias) return 0;
 
   const key = `bexxo_highscore_${address}`;
   const stored = localStorage.getItem(key);
@@ -222,24 +294,22 @@ function loadUserHighScore() {
     previewHighScoreElement.textContent = highScore;
   }
 
-  // Actualizar leaderboard
   updateLeaderboard();
-
   return highScore;
 }
 
 function saveHighScore(score) {
-  if (!address) return false;
+  if (!address || !hasValidAlias) {
+    console.warn("⚠️ No se puede guardar score sin alias válido");
+    return false;
+  }
 
   const key = `bexxo_highscore_${address}`;
   const currentHigh = parseInt(localStorage.getItem(key)) || 0;
 
   if (score > currentHigh) {
     localStorage.setItem(key, score.toString());
-
-    // Guardar también en el leaderboard
     saveToLeaderboard(currentAlias, address, score);
-
     console.log("🏆 Nuevo High Score:", score);
     return true;
   }
@@ -251,19 +321,16 @@ function saveToLeaderboard(alias, walletAddress, score) {
   const stored = localStorage.getItem(key);
   leaderboard = stored ? JSON.parse(stored) : [];
 
-  // Buscar si el usuario ya existe
   const existingIndex = leaderboard.findIndex(
     (entry) => entry.address === walletAddress
   );
 
   if (existingIndex !== -1) {
-    // Actualizar score si es mayor
     if (score > leaderboard[existingIndex].score) {
       leaderboard[existingIndex].score = score;
       leaderboard[existingIndex].alias = alias;
     }
   } else {
-    // Agregar nuevo entry
     leaderboard.push({
       address: walletAddress,
       alias: alias,
@@ -271,16 +338,9 @@ function saveToLeaderboard(alias, walletAddress, score) {
     });
   }
 
-  // Ordenar por score descendente
   leaderboard.sort((a, b) => b.score - a.score);
-
-  // Mantener solo top 10
   leaderboard = leaderboard.slice(0, 10);
-
-  // Guardar
   localStorage.setItem(key, JSON.stringify(leaderboard));
-
-  // Actualizar UI
   updateLeaderboard();
 }
 
@@ -299,8 +359,7 @@ function updateLeaderboard() {
   leaderboardList.innerHTML = leaderboard
     .map((entry, index) => {
       const isCurrentUser = entry.address === address;
-      const medal =
-        index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
+      const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
 
       return `
         <li class="flex justify-between items-center p-2 rounded-lg ${
@@ -309,9 +368,7 @@ function updateLeaderboard() {
           <div class="flex items-center gap-2">
             <span class="text-base font-semibold w-6">${medal}</span>
             <div>
-              <div class="font-semibold ${
-                isCurrentUser ? "text-emerald-400" : "text-white"
-              }">
+              <div class="font-semibold ${isCurrentUser ? "text-emerald-400" : "text-white"}">
                 ${entry.alias}
               </div>
               <div class="text-[10px] text-white/50">
@@ -319,9 +376,7 @@ function updateLeaderboard() {
               </div>
             </div>
           </div>
-          <div class="text-base font-bold ${
-            isCurrentUser ? "text-emerald-400" : "text-white"
-          }">
+          <div class="text-base font-bold ${isCurrentUser ? "text-emerald-400" : "text-white"}">
             ${entry.score}
           </div>
         </li>
@@ -346,23 +401,18 @@ const GRID_SIZE = 20;
 let CANVAS_SIZE = 400;
 let CELL_COUNT = CANVAS_SIZE / GRID_SIZE;
 
-// Ajustar tamaño del canvas según el viewport
 function resizeCanvas() {
   if (!canvas) return;
-
   const maxSize = Math.min(window.innerWidth - 40, 500);
   CANVAS_SIZE = Math.floor(maxSize / GRID_SIZE) * GRID_SIZE;
   CELL_COUNT = CANVAS_SIZE / GRID_SIZE;
-
   canvas.width = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
-
   if (gameState.isRunning) {
     draw();
   }
 }
 
-// Game state
 const gameState = {
   snake: [],
   direction: { x: 1, y: 0 },
@@ -377,8 +427,14 @@ const gameState = {
 };
 
 function initGame() {
-  resizeCanvas();
+  // VALIDACIÓN: Solo iniciar si tiene alias válido
+  if (!hasValidAlias || !isConnected) {
+    console.error("🚫 No se puede iniciar el juego sin alias válido");
+    blockGameAccess("NO_ALIAS");
+    return;
+  }
 
+  resizeCanvas();
   gameState.snake = [
     { x: 10, y: 10 },
     { x: 9, y: 10 },
@@ -404,6 +460,13 @@ function initGame() {
 }
 
 function startGame() {
+  // VALIDACIÓN: Solo iniciar si tiene alias válido
+  if (!hasValidAlias || !isConnected) {
+    console.error("🚫 No se puede iniciar el juego sin alias válido");
+    blockGameAccess("NO_ALIAS");
+    return;
+  }
+
   if (!gameState.isRunning && ctx) {
     gameState.isRunning = true;
     gameState.gameLoop = setInterval(update, gameState.speed);
@@ -438,19 +501,16 @@ function update() {
   if (gameState.isPaused) return;
 
   gameState.direction = { ...gameState.nextDirection };
-
   const head = {
     x: gameState.snake[0].x + gameState.direction.x,
     y: gameState.snake[0].y + gameState.direction.y,
   };
 
-  // Colisión con paredes
   if (head.x < 0 || head.x >= CELL_COUNT || head.y < 0 || head.y >= CELL_COUNT) {
     gameOver();
     return;
   }
 
-  // Colisión consigo misma
   if (gameState.snake.some((segment) => segment.x === head.x && segment.y === head.y)) {
     gameOver();
     return;
@@ -458,13 +518,11 @@ function update() {
 
   gameState.snake.unshift(head);
 
-  // Comió comida
   if (head.x === gameState.food.x && head.y === gameState.food.y) {
     gameState.score += 10;
     updateScore();
     placeFood();
 
-    // Aumentar velocidad cada 50 puntos
     if (gameState.score % 50 === 0 && gameState.speed > 80) {
       gameState.speed -= 10;
       stopGame();
@@ -480,11 +538,9 @@ function update() {
 function draw() {
   if (!ctx) return;
 
-  // Limpiar canvas con color de fondo oscuro
   ctx.fillStyle = "#020617";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-  // Dibujar grid sutil
   ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
   ctx.lineWidth = 1;
   for (let i = 0; i <= CELL_COUNT; i++) {
@@ -499,7 +555,6 @@ function draw() {
     ctx.stroke();
   }
 
-  // Dibujar serpiente con gradiente verde
   gameState.snake.forEach((segment, index) => {
     const gradient = ctx.createLinearGradient(
       segment.x * GRID_SIZE,
@@ -509,11 +564,9 @@ function draw() {
     );
 
     if (index === 0) {
-      // Cabeza más brillante
       gradient.addColorStop(0, "#22c55e");
       gradient.addColorStop(1, "#16a34a");
     } else {
-      // Cuerpo
       gradient.addColorStop(0, "#16a34a");
       gradient.addColorStop(1, "#15803d");
     }
@@ -527,45 +580,27 @@ function draw() {
     );
   });
 
-  // ==================== DIBUJAR COMIDA (LOGO BEEXO) ====================
-  const foodPixelX = gameState.food.x * GRID_SIZE;
-  const foodPixelY = gameState.food.y * GRID_SIZE;
-  const size = GRID_SIZE - 4;
-  const offset = (GRID_SIZE - size) / 2;
+  const foodGradient = ctx.createRadialGradient(
+    gameState.food.x * GRID_SIZE + GRID_SIZE / 2,
+    gameState.food.y * GRID_SIZE + GRID_SIZE / 2,
+    0,
+    gameState.food.x * GRID_SIZE + GRID_SIZE / 2,
+    gameState.food.y * GRID_SIZE + GRID_SIZE / 2,
+    GRID_SIZE / 2
+  );
+  foodGradient.addColorStop(0, "#f97316");
+  foodGradient.addColorStop(1, "#ea580c");
 
-  if (foodImage.complete && foodImage.naturalWidth !== 0) {
-    // Logo Beexo centrado en la celda
-    ctx.drawImage(
-      foodImage,
-      foodPixelX + offset,
-      foodPixelY + offset,
-      size,
-      size
-    );
-  } else {
-    // Fallback: bolita naranja original mientras carga la imagen
-    const foodGradient = ctx.createRadialGradient(
-      foodPixelX + GRID_SIZE / 2,
-      foodPixelY + GRID_SIZE / 2,
-      0,
-      foodPixelX + GRID_SIZE / 2,
-      foodPixelY + GRID_SIZE / 2,
-      GRID_SIZE / 2
-    );
-    foodGradient.addColorStop(0, "#f97316");
-    foodGradient.addColorStop(1, "#ea580c");
-
-    ctx.fillStyle = foodGradient;
-    ctx.beginPath();
-    ctx.arc(
-      foodPixelX + GRID_SIZE / 2,
-      foodPixelY + GRID_SIZE / 2,
-      GRID_SIZE / 2 - 2,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }
+  ctx.fillStyle = foodGradient;
+  ctx.beginPath();
+  ctx.arc(
+    gameState.food.x * GRID_SIZE + GRID_SIZE / 2,
+    gameState.food.y * GRID_SIZE + GRID_SIZE / 2,
+    GRID_SIZE / 2 - 2,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
 }
 
 function placeFood() {
@@ -588,7 +623,6 @@ function updateScore() {
 function gameOver() {
   stopGame();
 
-  // Guardar high score
   const isNewRecord = saveHighScore(gameState.score);
 
   if (isNewRecord) {
@@ -598,7 +632,6 @@ function gameOver() {
     }
   }
 
-  // Mostrar pantalla de game over
   if (finalScoreElement) {
     finalScoreElement.textContent = `Tu Score: ${gameState.score}`;
   }
@@ -617,7 +650,6 @@ function gameOver() {
 }
 
 function changeDirection(newDirection) {
-  // Prevenir reversa
   if (
     newDirection.x === -gameState.direction.x &&
     newDirection.y === -gameState.direction.y
@@ -629,17 +661,27 @@ function changeDirection(newDirection) {
 
 // ==================== EVENT LISTENERS ====================
 
-// Botón de jugar (conecta wallet)
+// Botón de jugar CON VALIDACIÓN
 if (aliasPlayBtn) {
   aliasPlayBtn.addEventListener("click", async () => {
-    const aliasValue = aliasInput?.value?.trim() || "";
-
-    if (!aliasValue) {
-      alert("Por favor, ingresa tu alias de Bexxo antes de jugar.");
+    console.log("🎮 Botón JUGAR presionado");
+    
+    // Validar que hay algo en el input (opcional)
+    const inputValue = aliasInput?.value?.trim() || "";
+    if (!inputValue) {
+      alert("⚠️ Por favor, ingresa tu alias antes de continuar.");
       return;
     }
 
-    await connectBexxoWallet();
+    // Intentar conectar con Bexxo
+    const connected = await connectBexxoWallet();
+    
+    if (!connected) {
+      console.error("🚫 Conexión fallida o alias inválido");
+      // blockGameAccess ya fue llamado dentro de connectBexxoWallet
+    } else {
+      console.log("✅ Conexión exitosa y alias válido");
+    }
   });
 }
 
@@ -695,7 +737,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Controles táctiles (botones en pantalla)
+// Controles táctiles
 const controlButtons = document.querySelectorAll(".control-btn");
 controlButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -717,14 +759,12 @@ controlButtons.forEach((btn) => {
   });
 });
 
-// Prevenir scroll con flechas
 window.addEventListener("keydown", (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
     e.preventDefault();
   }
 });
 
-// Resize canvas cuando cambie el tamaño de ventana
 window.addEventListener("resize", () => {
   if (gameState.isRunning || pages.game?.classList.contains("flex")) {
     resizeCanvas();
@@ -732,7 +772,7 @@ window.addEventListener("resize", () => {
 });
 
 // ==================== INICIALIZACIÓN ====================
-// Cargar leaderboard al inicio
 updateLeaderboard();
 
-console.log("🐍 Bexxo Snake Game cargado exitosamente!");
+console.log("🐍 Bexxo Snake Game cargado con VALIDACIÓN DE ALIAS estricta ✅");
+console.log("🔒 El juego solo se iniciará con un alias válido de Beexo");
