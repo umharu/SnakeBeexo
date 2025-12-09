@@ -1,10 +1,10 @@
-// src/main.js - Bexxo Snake Game con VALIDACIÓN DE ALIAS usando getClient()
+// src/main.js - Bexxo Snake Game - CORRECTO según documentación oficial
 import { XOConnect } from "xo-connect";
 import { ethers } from "ethers";
 
 // ==================== ESTADO WEB3 / BEEXO ====================
-let client = null; // Cliente de XOConnect
-let currentAlias = ""; // alias actual del jugador
+let client = null;
+let currentAlias = "";
 let isConnected = false;
 let hasValidAlias = false;
 
@@ -94,39 +94,31 @@ if (mobileOverlay) {
 
 // ==================== VALIDACIÓN DE ALIAS ====================
 
-/**
- * Valida si el alias es válido
- */
 function isValidAlias(alias) {
   return (
     alias !== null &&
     alias !== undefined &&
     typeof alias === "string" &&
     alias.trim() !== "" &&
-    alias.toLowerCase() !== "sin alias" &&
-    alias.toLowerCase() !== "null" &&
-    alias.toLowerCase() !== "undefined"
+    alias.trim().length > 0
   );
 }
 
-/**
- * Muestra un mensaje de error cuando no hay alias válido
- */
 function showAliasError() {
   alert(
-    "❌ NO TIENES UN ALIAS VÁLIDO EN BEEXO\n\n" +
-    "Para jugar necesitas:\n" +
-    "1. Tener un alias configurado en tu wallet Beexo\n" +
-    "2. El alias debe estar activo en tu cuenta\n\n" +
-    "Por favor, configura tu alias en Beexo antes de jugar."
+    "❌ NO TIENES UN ALIAS CONFIGURADO EN BEEXO\n\n" +
+    "Para jugar este juego necesitas:\n" +
+    "• Tener un alias válido en tu cuenta Beexo\n" +
+    "• El alias se deriva de tu seed phrase\n\n" +
+    "Por favor, configura tu alias en la app Beexo antes de continuar."
   );
 }
 
-/**
- * Bloquea el acceso al juego mostrando mensaje de error
- */
-function blockGameAccess(reason) {
-  console.error("🚫 Acceso al juego bloqueado:", reason);
+function blockGameAccess(reason, details = "") {
+  console.error("🚫 Acceso bloqueado:", reason);
+  if (details) {
+    console.error("   Detalles:", details);
+  }
   
   if (aliasPlayBtn) {
     aliasPlayBtn.disabled = false;
@@ -138,58 +130,78 @@ function blockGameAccess(reason) {
       showAliasError();
       break;
     case "NO_CLIENT":
-      alert("❌ Error de conexión\n\nNo se pudo conectar con Beexo.\nPor favor, intenta nuevamente.");
+      alert("❌ Error de conexión\n\nNo se pudo obtener tu información de Beexo.\nAsegúrate de estar usando la app Beexo.");
+      break;
+    case "ERROR":
+      alert(`❌ Error\n\n${details || "Hubo un problema al conectar con Beexo."}`);
       break;
     default:
-      alert("❌ Error\n\nHubo un problema al validar tu cuenta.\nPor favor, intenta nuevamente.");
+      alert("❌ Error inesperado\n\nPor favor, intenta nuevamente.");
   }
   
   showPage("home");
 }
 
-// ==================== CONEXIÓN BEXXO CON getClient() ====================
+// ==================== CONEXIÓN BEEXO - MÉTODO OFICIAL ====================
 
+/**
+ * Conecta con Beexo usando el método oficial: XOConnect.getClient()
+ * Según documentación: https://www.npmjs.com/package/xo-connect
+ */
 async function connectBexxoWallet() {
   try {
-    console.log("🔌 Iniciando conexión con Beexo Wallet...");
+    console.log("=".repeat(60));
+    console.log("🔌 INICIANDO CONEXIÓN CON BEEXO");
+    console.log("=".repeat(60));
 
-    // Mostrar estado de carga
     if (aliasPlayBtn) {
       aliasPlayBtn.disabled = true;
       aliasPlayBtn.textContent = "CONECTANDO...";
     }
 
-    // ============================================
-    // MÉTODO CORRECTO: Usar XOConnect.getClient()
-    // ============================================
-    console.log("📡 Obteniendo cliente de Beexo...");
+    // ========================================================
+    // MÉTODO OFICIAL DE BEEXO - xo-connect
+    // Documentación: https://www.npmjs.com/package/xo-connect
+    // 
+    // import { XOConnect } from "xo-connect";
+    // const client = await XOConnect.getClient();
+    // console.log(client.alias); // e.g. "katemiller"
+    // ========================================================
+
+    console.log("📡 Llamando a XOConnect.getClient()...");
     client = await XOConnect.getClient();
     
+    console.log("✅ Cliente obtenido exitosamente");
+    console.log("📊 Objeto client completo:", client);
+    
+    // Verificar que el client no sea null/undefined
     if (!client) {
-      console.error("❌ No se pudo obtener el cliente de Beexo");
-      blockGameAccess("NO_CLIENT");
+      console.error("❌ client es null o undefined");
+      blockGameAccess("NO_CLIENT", "XOConnect.getClient() retornó null");
       return false;
     }
 
-    console.log("✅ Cliente obtenido:", client);
-    console.log("📊 Datos del cliente:", {
-      alias: client.alias,
-      currencies: client.currencies,
-      completeObject: client
-    });
-
-    // VALIDACIÓN CRÍTICA: Verificar que el alias existe
+    // Extraer el alias del client
     const bexxoAlias = client.alias;
     
-    console.log("🏷️ Alias del cliente:", bexxoAlias);
-    console.log("🔍 Tipo de alias:", typeof bexxoAlias);
-    console.log("🔍 ¿Es válido?:", isValidAlias(bexxoAlias));
+    console.log("─".repeat(60));
+    console.log("🏷️  INFORMACIÓN DEL CLIENTE:");
+    console.log("   Alias:", bexxoAlias);
+    console.log("   Tipo de alias:", typeof bexxoAlias);
+    console.log("   Monedas disponibles:", client.currencies?.length || 0);
+    if (client.currencies && client.currencies.length > 0) {
+      console.log("   Primera moneda:", client.currencies[0]);
+    }
+    console.log("─".repeat(60));
 
-    // BLOQUEAR SI NO HAY ALIAS VÁLIDO
+    // VALIDACIÓN CRÍTICA: Verificar que existe un alias válido
     if (!isValidAlias(bexxoAlias)) {
-      console.error("❌ ALIAS INVÁLIDO O NO EXISTE");
-      console.error("   - Alias recibido:", bexxoAlias);
-      console.error("   - El usuario NO puede jugar sin alias");
+      console.error("❌ VALIDACIÓN FALLIDA");
+      console.error("   El alias no es válido:", bexxoAlias);
+      console.error("   Tipo:", typeof bexxoAlias);
+      console.error("   Es null?:", bexxoAlias === null);
+      console.error("   Es undefined?:", bexxoAlias === undefined);
+      console.error("   String vacío?:", bexxoAlias === "");
       
       hasValidAlias = false;
       isConnected = false;
@@ -197,24 +209,25 @@ async function connectBexxoWallet() {
       return false;
     }
 
-    // ✅ ALIAS VÁLIDO - Continuar
+    // ✅ ALIAS VÁLIDO - Proceder
     currentAlias = bexxoAlias;
     hasValidAlias = true;
     isConnected = true;
     
-    console.log("✅ CONEXIÓN EXITOSA");
-    console.log("✅ Alias válido:", currentAlias);
+    console.log("✅ VALIDACIÓN EXITOSA");
+    console.log("   Alias guardado:", currentAlias);
+    console.log("   hasValidAlias:", hasValidAlias);
+    console.log("   isConnected:", isConnected);
+    console.log("=".repeat(60));
 
-    // Actualizar input con el alias de Beexo
+    // Actualizar UI
     if (aliasInput) {
       aliasInput.value = currentAlias;
     }
-
-    // Actualizar UI
     updateAliasUI(currentAlias);
     loadUserHighScore();
 
-    // Ir a la página de juego
+    // Iniciar el juego
     console.log("🎮 Iniciando juego...");
     showPage("game");
     initGame();
@@ -223,25 +236,41 @@ async function connectBexxoWallet() {
     return true;
     
   } catch (error) {
-    console.error("❌ Error en connectBexxoWallet:", error);
-    console.error("   Tipo de error:", error.name);
-    console.error("   Mensaje:", error.message);
-    console.error("   Stack:", error.stack);
+    console.error("=".repeat(60));
+    console.error("❌ ERROR EN connectBexxoWallet");
+    console.error("=".repeat(60));
+    console.error("Tipo de error:", error.constructor.name);
+    console.error("Mensaje:", error.message);
+    console.error("Stack trace:", error.stack);
+    console.error("=".repeat(60));
 
     hasValidAlias = false;
     isConnected = false;
     
-    if (error.message && error.message.includes("alias")) {
-      blockGameAccess("NO_ALIAS");
-    } else {
-      blockGameAccess("NO_CLIENT");
+    // Determinar tipo de error
+    let errorReason = "ERROR";
+    let errorDetails = error.message;
+    
+    if (error.message && (
+      error.message.toLowerCase().includes("alias") ||
+      error.message.toLowerCase().includes("not found")
+    )) {
+      errorReason = "NO_ALIAS";
+      errorDetails = "No se encontró un alias válido";
+    } else if (error.message && (
+      error.message.toLowerCase().includes("client") ||
+      error.message.toLowerCase().includes("connection") ||
+      error.message.toLowerCase().includes("network")
+    )) {
+      errorReason = "NO_CLIENT";
+      errorDetails = "No se pudo conectar con Beexo";
     }
-
+    
+    blockGameAccess(errorReason, errorDetails);
     return false;
   }
 }
 
-// Actualizar textos donde aparece el alias
 function updateAliasUI(alias) {
   const value = alias || "Sin alias";
   aliasSpans.forEach((el) => {
@@ -249,17 +278,10 @@ function updateAliasUI(alias) {
   });
 }
 
-// Función para obtener un identificador único (usar alias o generar uno)
-function getUserIdentifier() {
-  if (currentAlias && hasValidAlias) {
-    return currentAlias;
-  }
-  return "guest_" + Date.now();
-}
-
 // ==================== HIGH SCORE Y LEADERBOARD ====================
+
 function loadUserHighScore() {
-  if (!hasValidAlias) return 0;
+  if (!hasValidAlias || !currentAlias) return 0;
 
   const key = `bexxo_highscore_${currentAlias}`;
   const stored = localStorage.getItem(key);
@@ -274,8 +296,8 @@ function loadUserHighScore() {
 }
 
 function saveHighScore(score) {
-  if (!hasValidAlias) {
-    console.warn("⚠️ No se puede guardar score sin alias válido");
+  if (!hasValidAlias || !currentAlias) {
+    console.warn("⚠️ No se puede guardar score: no hay alias válido");
     return false;
   }
 
@@ -285,7 +307,7 @@ function saveHighScore(score) {
   if (score > currentHigh) {
     localStorage.setItem(key, score.toString());
     saveToLeaderboard(currentAlias, score);
-    console.log("🏆 Nuevo High Score:", score);
+    console.log("🏆 Nuevo High Score:", score, "para", currentAlias);
     return true;
   }
   return false;
@@ -305,10 +327,7 @@ function saveToLeaderboard(alias, score) {
       leaderboard[existingIndex].score = score;
     }
   } else {
-    leaderboard.push({
-      alias: alias,
-      score: score,
-    });
+    leaderboard.push({ alias, score });
   }
 
   leaderboard.sort((a, b) => b.score - a.score);
@@ -397,9 +416,9 @@ const gameState = {
 };
 
 function initGame() {
-  // VALIDACIÓN: Solo iniciar si tiene alias válido
+  // PROTECCIÓN: No permitir iniciar sin alias válido
   if (!hasValidAlias || !isConnected) {
-    console.error("🚫 No se puede iniciar el juego sin alias válido");
+    console.error("🚫 initGame() bloqueado: no hay alias válido");
     blockGameAccess("NO_ALIAS");
     return;
   }
@@ -430,9 +449,9 @@ function initGame() {
 }
 
 function startGame() {
-  // VALIDACIÓN: Solo iniciar si tiene alias válido
+  // PROTECCIÓN: No permitir iniciar sin alias válido
   if (!hasValidAlias || !isConnected) {
-    console.error("🚫 No se puede iniciar el juego sin alias válido");
+    console.error("🚫 startGame() bloqueado: no hay alias válido");
     blockGameAccess("NO_ALIAS");
     return;
   }
@@ -631,19 +650,10 @@ function changeDirection(newDirection) {
 
 // ==================== EVENT LISTENERS ====================
 
-// Botón de jugar CON VALIDACIÓN
 if (aliasPlayBtn) {
   aliasPlayBtn.addEventListener("click", async () => {
-    console.log("🎮 Botón JUGAR presionado");
-    
-    // Intentar conectar con Bexxo usando getClient()
-    const connected = await connectBexxoWallet();
-    
-    if (!connected) {
-      console.error("🚫 Conexión fallida o alias inválido");
-    } else {
-      console.log("✅ Conexión exitosa y alias válido");
-    }
+    console.log("\n🎮 BOTÓN JUGAR PRESIONADO\n");
+    await connectBexxoWallet();
   });
 }
 
@@ -733,5 +743,10 @@ window.addEventListener("resize", () => {
 // ==================== INICIALIZACIÓN ====================
 updateLeaderboard();
 
-console.log("🐍 Bexxo Snake Game cargado - Usando XOConnect.getClient() ✅");
-console.log("🔒 Validación de alias activa");
+console.log("\n" + "=".repeat(60));
+console.log("🐍 BEEXO SNAKE GAME - CARGADO");
+console.log("=".repeat(60));
+console.log("📚 Usando: XOConnect.getClient()");
+console.log("🔒 Validación de alias: ACTIVA");
+console.log("📍 Método según documentación oficial de xo-connect");
+console.log("=".repeat(60) + "\n");
